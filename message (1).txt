@@ -224,7 +224,7 @@ local function teleportTo(coin)
     hrp.CFrame = coin.CFrame
 
     firetouchinterest(hrp, coin, 0)
-    task.wait(0.5)
+    task.wait(0.6)
     pcall(function()
         firetouchinterest(hrp, coin, 1)
     end)
@@ -232,7 +232,7 @@ local function teleportTo(coin)
     hrp.CFrame = CFrame.new(hrp.Position.X, SAFE_HEIGHT, hrp.Position.Z)
     hrp.Anchored = true
 
-    task.wait(1.8)
+    task.wait(1.9)
 
     IsCollecting = false
 end
@@ -449,3 +449,4 @@ task.spawn(function()
         task.wait(5)
     end
 end)
+
