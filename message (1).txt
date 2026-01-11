@@ -321,7 +321,7 @@ InventoryChanged.Event:Connect(function(_, changedName)
             isFirstRun = false
             return 
         end
-
+        lastCoinChangeTime = os.time()
         -- Nếu số tiền tăng lên (nhặt được xu)
         if currentAmount > lastKnownAmount then
             local gained = currentAmount - lastKnownAmount
@@ -336,7 +336,7 @@ end)
 -- =====================================================
 -- FIX: CHỈ HOP KHI QUÁ 20S KHÔNG NHẬN ĐƯỢC TIỀN
 -- =====================================================
-local NO_COIN_HOP_TIME = 300 -- 20 giây không có tiền là cút
+local NO_COIN_HOP_TIME = 420
 
 task.spawn(function()
     -- Khởi tạo để tránh lỗi nil lúc mới chạy
@@ -348,7 +348,7 @@ task.spawn(function()
         -- Tính thời gian đứng im
         local currentTime = os.time()
         local idleTime = currentTime - (lastCoinChangeTime or startTime)
-        -- Chỉ Hop dựa trên thời gian
+        print(idletime)
         if idleTime >= NO_COIN_HOP_TIME then
             warn("⏳ Quá " .. NO_COIN_HOP_TIME .. "s không lụm được xu nào. Đang đổi server...")
             
@@ -403,20 +403,6 @@ local function runModeLogic()
                 task.wait(0.2)
             end
         end
-        local InventoryChanged = ReplicatedStorage
-        :WaitForChild("Remotes")
-        :WaitForChild("Inventory")
-        :WaitForChild("InventoryDataChanged")
-
-        InventoryChanged.Event:Connect(function(_, changedName)
-            if changedName == eventTitle then
-                local bpData = ProfileData["Christmas2025"]
-                if bpData then
-                    BPLabel.Text = "BATTLE PASS LEVEL: " .. (bpData.CurrentTier or 0)
-                    print("✅ BP SYNCED:", bpData.CurrentTier)
-                end
-            end
-        end)
 
         -- Tự dùng Key nếu có
         local keyCount = ProfileData.Materials.Owned["SnowKey2025"] or 0
