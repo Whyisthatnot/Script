@@ -224,7 +224,7 @@ local function teleportTo(coin)
     hrp.CFrame = coin.CFrame
 
     firetouchinterest(hrp, coin, 0)
-    task.wait(0.6)
+    task.wait(0.5)
     pcall(function()
         firetouchinterest(hrp, coin, 1)
     end)
@@ -232,7 +232,7 @@ local function teleportTo(coin)
     hrp.CFrame = CFrame.new(hrp.Position.X, SAFE_HEIGHT, hrp.Position.Z)
     hrp.Anchored = true
 
-    task.wait(1.9)
+    task.wait(1.8)
 
     IsCollecting = false
 end
@@ -248,11 +248,17 @@ task.spawn(function()
 
             if hrp and not IsCollecting then
                 if isBagFullUI() then
-                    hrp.Anchored = true
-
-                    if math.abs(hrp.Position.Y - SAFE_HEIGHT) > 10 then
-                        hrp.CFrame = CFrame.new(hrp.Position.X, SAFE_HEIGHT, hrp.Position.Z)
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                        LocalPlayer.Character.Humanoid.Health = 0
                     end
+
+                    -- 2. Đợi nhân vật mới load hoàn toàn (Không dùng ChildAdded:Wait vì dễ treo)
+                    local newChar = LocalPlayer.CharacterAdded:Wait()
+                    local hrp = newChar:WaitForChild("HumanoidRootPart", 10) 
+
+                    -- 3. Đợi thêm 1 chút để server nhận diện nhân vật đã ổn định
+                    task.wait(1)
+                
                 else
                     local target = getNearestSafeCoin()
 
@@ -282,40 +288,55 @@ local currencyName = event.EventStartInfo.CurrencyName
 
 lastCoinAmount = ProfileData.Materials.Owned[currencyName] or 0
 
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+-- ==========================================
+-- SERVER HOP: LOW PLAYERS ONLY
+-- ==========================================
 local function serverHop()
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
     local placeId = game.PlaceId
-    local servers = {}
-    
-    -- Lấy danh sách server từ API của Roblox
     local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
     
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet(url))
-    end)
-    
-    if success and result and result.data then
-        for _, server in ipairs(result.data) do
-            -- Chỉ chọn server còn chỗ trống và số người cực thấp (dưới 5 người chẳng hạn)
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                table.insert(servers, {id = server.id, players = server.playing})
-            end
-        end
-        
-        -- Sắp xếp để lấy server ít người nhất lên đầu
-        table.sort(servers, function(a, b)
-            return a.players < b.players
+    local success = false
+    local result = nil
+
+    print("🔄 Đang tìm server phù hợp...")
+
+    -- Lặp cho đến khi success = true
+    repeat
+        local ok, err = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
         end)
         
-        if #servers > 0 then
-            print("🚀 Đang chuyển sang server có " .. servers[1].players .. " người...")
-            TeleportService:TeleportToPlaceInstance(placeId, servers[1].id, Players.LocalPlayer)
+        if ok and err and err.data then
+            local servers = {}
+            for _, server in ipairs(err.data) do
+                -- Điều kiện: Ít nhất 4 người và không đầy
+                if server.playing >= 4 and server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    table.insert(servers, {id = server.id, players = server.playing})
+                end
+            end
+            
+            if #servers > 0 then
+                table.sort(servers, function(a, b) return a.players < b.players end)
+                success = true -- Đã tìm thấy, thoát vòng lặp
+                print("🚀 Đang chuyển sang server có " .. servers[1].players .. " người...")
+                TeleportService:TeleportToPlaceInstance(placeId, servers[1].id, Players.LocalPlayer)
+            else
+                print("⚠️ Chưa thấy server >= 4 người, đang thử lại...")
+            end
         else
-            warn("❌ Không tìm thấy server nào vắng hơn!")
+            print("❌ Lỗi API hoặc bị giới hạn, đợi 3 giây rồi thử lại...")
         end
-    else
-        warn("❌ Lỗi khi lấy danh sách server.")
-    end
+        
+        if not success then task.wait(3) end -- Đợi 3 giây trước khi quét lại để tránh bị chặn
+    until success
 end
+
 
 local InventoryChanged = ReplicatedStorage:WaitForChild('Remotes'):WaitForChild('Inventory'):WaitForChild('InventoryDataChanged')
 InventoryChanged.Event:Connect(function(_, changedName)
@@ -364,10 +385,6 @@ task.spawn(function()
             
             serverHop()
             task.wait(10)
-            serverHop()
-            task.wait(5)
-            serverHop()
-
 
         end
     end
@@ -449,5 +466,3 @@ task.spawn(function()
         task.wait(5)
     end
 end)
-
-
