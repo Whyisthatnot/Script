@@ -348,7 +348,7 @@ task.spawn(function()
         -- Tính thời gian đứng im
         local currentTime = os.time()
         local idleTime = currentTime - (lastCoinChangeTime or startTime)
-        print(idletime)
+        print(idleTime)
         if idleTime >= NO_COIN_HOP_TIME then
             warn("⏳ Quá " .. NO_COIN_HOP_TIME .. "s không lụm được xu nào. Đang đổi server...")
             
