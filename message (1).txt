@@ -2,7 +2,7 @@ task.wait(5)
 setfpscap(5)
 getgenv().config = {
     AutoCollect = true,
-    Mode = "BattlePass", -- Chế độ: "BattlePass" hoặc "Crate"
+    Mode = "Crate", -- Chế độ: "BattlePass" hoặc "Crate"
 }
 
 local Players = game:GetService('Players')
@@ -449,4 +449,5 @@ task.spawn(function()
         task.wait(5)
     end
 end)
+
 
