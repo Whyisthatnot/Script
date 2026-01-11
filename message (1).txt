@@ -17,14 +17,6 @@ local event = EventInfoService:GetMainEvent()
 local currencyName = event.EventStartInfo.CurrencyName
 local eventTitle = event.Title
 local ScreenGui = Instance.new('ScreenGui')
-local noclip = true -- Đổi thành false nếu muốn mặc định tắt
-game:GetService("RunService").Stepped:Connect(function()
-    if noclip then
-        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
-        end
-    end
-end)
 getgenv().config = getgenv().config or {}
 -- Gộp tất cả vào 1 dòng an toàn
 task.spawn(function()
@@ -466,3 +458,4 @@ task.spawn(function()
         task.wait(5)
     end
 end)
+
