@@ -17,6 +17,8 @@ local event = EventInfoService:GetMainEvent()
 local currencyName = event.EventStartInfo.CurrencyName
 local eventTitle = event.Title
 local ScreenGui = Instance.new('ScreenGui')
+local noclip = true -- Đổi thành false nếu muốn mặc định tắt
+
 getgenv().config = getgenv().config or {}
 -- Gộp tất cả vào 1 dòng an toàn
 task.spawn(function()
@@ -216,7 +218,7 @@ local function teleportTo(coin)
     hrp.CFrame = coin.CFrame
 
     firetouchinterest(hrp, coin, 0)
-    task.wait(0.5)
+    task.wait(0.6)
     pcall(function()
         firetouchinterest(hrp, coin, 1)
     end)
@@ -224,7 +226,7 @@ local function teleportTo(coin)
     hrp.CFrame = CFrame.new(hrp.Position.X, SAFE_HEIGHT, hrp.Position.Z)
     hrp.Anchored = true
 
-    task.wait(1.8)
+    task.wait(1.9)
 
     IsCollecting = false
 end
@@ -250,7 +252,7 @@ task.spawn(function()
 
                     -- 3. Đợi thêm 1 chút để server nhận diện nhân vật đã ổn định
                     task.wait(1)
-                
+                    print("full")
                 else
                     local target = getNearestSafeCoin()
 
@@ -458,4 +460,3 @@ task.spawn(function()
         task.wait(5)
     end
 end)
-
