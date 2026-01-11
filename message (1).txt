@@ -17,7 +17,14 @@ local event = EventInfoService:GetMainEvent()
 local currencyName = event.EventStartInfo.CurrencyName
 local eventTitle = event.Title
 local ScreenGui = Instance.new('ScreenGui')
-
+local noclip = true -- Đổi thành false nếu muốn mặc định tắt
+game:GetService("RunService").Stepped:Connect(function()
+    if noclip then
+        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
+    end
+end)
 getgenv().config = getgenv().config or {}
 -- Gộp tất cả vào 1 dòng an toàn
 task.spawn(function()
@@ -217,7 +224,7 @@ local function teleportTo(coin)
     hrp.CFrame = coin.CFrame
 
     firetouchinterest(hrp, coin, 0)
-    task.wait(0.9)
+    task.wait(0.5)
     pcall(function()
         firetouchinterest(hrp, coin, 1)
     end)
@@ -225,7 +232,7 @@ local function teleportTo(coin)
     hrp.CFrame = CFrame.new(hrp.Position.X, SAFE_HEIGHT, hrp.Position.Z)
     hrp.Anchored = true
 
-    task.wait(1.3)
+    task.wait(1.8)
 
     IsCollecting = false
 end
@@ -435,7 +442,7 @@ local function runModeLogic()
         end
     end
 end
--- Vòng lặp chạy Logic Mode (Giữ nguyên)
+
 task.spawn(function()
     while true do
         pcall(runModeLogic)
