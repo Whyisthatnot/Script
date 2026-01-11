@@ -134,7 +134,7 @@ task.spawn(function()
 end)
 
 
-local SAFE_PLAYER_DISTANCE = 15
+local SAFE_PLAYER_DISTANCE = 50
 local SAFE_HEIGHT = 1500
 
 task.spawn(function()
