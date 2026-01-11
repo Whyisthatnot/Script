@@ -365,6 +365,23 @@ task.spawn(function()
         end
     end
 end)
+-- Vòng lặp kiểm tra số lượng người trong server định kỳ
+task.spawn(function()
+    while true do
+        task.wait(20) -- Kiểm tra mỗi 20 giây (không tốn tài nguyên)
+        
+        local currentPlayers = #game:GetService("Players"):GetPlayers()
+        
+        if currentPlayers > 10 then
+            warn("⚠️ Server hiện có " .. currentPlayers .. " người (Vượt mức cho phép). Đang tìm server vắng...")
+                        
+            serverHop()
+            task.wait(5)
+            serverHop()
+
+        end
+    end
+end)
 -- ==========================================
 -- PHẦN FIX: REMOTES & LOGIC MODE
 -- ==========================================
