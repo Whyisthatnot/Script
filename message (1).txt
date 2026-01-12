@@ -258,13 +258,6 @@ task.spawn(function()
 
                     if target then
                         teleportTo(target)
-                    else
-                        hrp.Anchored = true
-
-                        if math.abs(hrp.Position.Y - SAFE_HEIGHT) > 10 then
-                            hrp.CFrame = CFrame.new(hrp.Position.X, SAFE_HEIGHT, hrp.Position.Z)
-                        end
-                    end
                 end
             end
         end
@@ -460,4 +453,3 @@ task.spawn(function()
         task.wait(5)
     end
 end)
-
