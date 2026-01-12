@@ -1,4 +1,3 @@
-task.wait(5)
 setfpscap(5)
 getgenv().config = {
     AutoCollect = false,
@@ -100,7 +99,7 @@ local function createSuperLabel(name, text, color, size, order)
 end
 local UserLabel = createSuperLabel('UserLabel', '' .. LocalPlayer.Name:upper(), Color3.new(1, 1, 1), 60, 1)
 local CoinLabel = createSuperLabel('CoinLabel', 'LOADING...', Color3.fromRGB(255, 235, 59), 45, 2)
--- Label mới cho Mode
+local RateLabel = createSuperLabel('RateLabel', 'COIN/M: 0', Color3.fromRGB(144, 238, 144), 30, 7)
 local ModeLabel = createSuperLabel('ModeLabel', 'MODE: ' .. getgenv().config.Mode:upper(), Color3.fromRGB(0, 255, 255), 40, 3)
 local BPLabel = createSuperLabel('BPLabel', 'LEVEL: --', Color3.fromRGB(0, 229, 255), 40, 5)
 local TimeLabel = createSuperLabel('TimeLabel', '00:00:00', Color3.fromRGB(200, 200, 200), 30, 6)
@@ -127,6 +126,13 @@ local function updateUI()
     local bpData = LiveProfile[eventTitle]
     if bpData then
         BPLabel.Text = 'BATTLE PASS LEVEL: ' .. (bpData.CurrentTier or 0)
+    end
+    if elapsed > 0 then
+        -- Formula: (Total Earned / Elapsed Seconds) * 60
+        local coinsPerMinute = math.floor((totalEarnedEver / elapsed) * 60)
+        RateLabel.Text = string.format("COIN/M: %d", coinsPerMinute)
+    else
+        RateLabel.Text = "COIN/M: 0"
     end
 end
 
