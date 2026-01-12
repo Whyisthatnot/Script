@@ -34,10 +34,6 @@ task.spawn(function()
     end
 end)
 
-for _, child in pairs(workspace.Lobby:GetChildren())do
-    child:Destroy()
-end
-
 ScreenGui.Name = 'UltraTopOverlay'
 ScreenGui.Parent = LocalPlayer:WaitForChild('PlayerGui')
 ScreenGui.IgnoreGuiInset = true
