@@ -34,6 +34,7 @@ task.spawn(function()
     end
 end)
 
+
 ScreenGui.Name = 'UltraTopOverlay'
 ScreenGui.Parent = LocalPlayer:WaitForChild('PlayerGui')
 ScreenGui.IgnoreGuiInset = true
@@ -254,6 +255,7 @@ task.spawn(function()
 
                     if target then
                         teleportTo(target)
+                    end
                 end
             end
         end
@@ -449,4 +451,3 @@ task.spawn(function()
         task.wait(5)
     end
 end)
-
