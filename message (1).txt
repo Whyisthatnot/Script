@@ -1,7 +1,7 @@
 task.wait(5)
 setfpscap(5)
 getgenv().config = {
-    AutoCollect = true,
+    AutoCollect = false,
     Mode = "Crate", -- Chế độ: "BattlePass" hoặc "Crate"
 }
 
@@ -453,3 +453,4 @@ task.spawn(function()
         task.wait(5)
     end
 end)
+
