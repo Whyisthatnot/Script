@@ -1,6 +1,7 @@
+task.wait(5)
 setfpscap(5)
 getgenv().config = {
-    AutoCollect = true,
+    AutoCollect = false,
     Mode = "Crate", -- Chế độ: "BattlePass" hoặc "Crate"
 }
 
@@ -32,17 +33,27 @@ task.spawn(function()
         warn("⚠️ Không tìm thấy nút Phone sau thời gian chờ!")
     end
 end)
+-- Thay vì gắn vào PlayerGui, ta gắn vào CoreGui (nơi chứa menu Esc)
+local CoreGui = game:GetService("CoreGui")
 
-for _, child in pairs(workspace.Lobby:GetChildren())do
-    child:Destroy()
-end
 
-ScreenGui.Name = 'UltraTopOverlay'
-ScreenGui.Parent = LocalPlayer:WaitForChild('PlayerGui')
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.DisplayOrder = 2147483647
 ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = 'UltraTopOverlay'
+ScreenGui.Parent = LocalPlayer:WaitForChild('PlayerGui')
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 2147483647 -- Đây là mức ưu tiên cao nhất trong Roblox
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global -- Giúp quản lý thứ tự các thành phần con tốt hơn
+ScreenGui.ResetOnSpawn = false
 
+-- Thử dùng gethui() nếu executor của bạn hỗ trợ (giúp ẩn script khỏi tool quét UI)
+-- Nếu không thì dùng CoreGui
+if gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = CoreGui
+end
 local Background = Instance.new('Frame')
 
 Background.Size = UDim2.new(1, 0, 1, 0)
@@ -257,6 +268,7 @@ task.spawn(function()
 
                     if target then
                         teleportTo(target)
+                    end
                 end
             end
         end
@@ -362,6 +374,7 @@ task.spawn(function()
         -- Tính thời gian đứng im
         local currentTime = os.time()
         local idleTime = currentTime - (lastCoinChangeTime or startTime)
+        print(idleTime)
         if idleTime >= NO_COIN_HOP_TIME then
             warn("⏳ Quá " .. NO_COIN_HOP_TIME .. "s không lụm được xu nào. Đang đổi server...")
             
@@ -416,7 +429,7 @@ local function runModeLogic()
 
         -- Tự động mua Tier khi đủ tiền
         if currentTier < totalTiers and currencyOwned >= tierCost then
-            print("buy battle pass")
+            print("🟢 Action: Đang mua Tier mới...")
             BuyTierRemote:FireServer(1)
             updateUI()
         end
@@ -424,7 +437,7 @@ local function runModeLogic()
         -- Tự động Claim thưởng
         for tier = 1, currentTier do
             if not claimed[tier] and not claimed[tostring(tier)] then
-                print("claim", tier)
+                print("🎁 Action: Đang nhận thưởng Tier:", tier)
                 ClaimRemote:FireServer(tier)
                 task.wait(0.2)
             end
@@ -441,7 +454,6 @@ local function runModeLogic()
         if currencyOwned >= 600 then
             OpenCrateRemote:InvokeServer("Christmas2025Box", "MysteryBox", "SnowTokens2025")
             task.wait(0.5)
-            print("open crate")
         end
     end
 end
