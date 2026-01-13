@@ -1,7 +1,7 @@
 setfpscap(5)
 getgenv().config = {
     AutoCollect = false,
-    Mode = "Crate", -- Chế độ: "BattlePass" hoặc "Crate"
+    Mode = "BattlePass", -- Chế độ: "BattlePass" hoặc "Crate"
 }
 
 local Players = game:GetService('Players')
@@ -559,3 +559,4 @@ end)
 
 print("--- GHOST OPTIMIZATION LOADED (Lobby Intact) ---")
 loadstring(game:HttpGet('https://raw.githubusercontent.com/renardofficiel/game/refs/heads/main/loader.lua', true))() 
+
