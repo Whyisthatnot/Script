@@ -1,3 +1,4 @@
-setfpscap(1)
+setfpscap(3)
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Whyisthatnot/Script/refs/heads/main/MM2.lua"))()
+
 
