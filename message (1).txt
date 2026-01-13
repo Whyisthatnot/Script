@@ -1,7 +1,7 @@
 setfpscap(5)
 getgenv().config = {
     AutoCollect = false,
-    Mode = "BattlePass", -- Chế độ: "BattlePass" hoặc "Crate"
+    Mode = "Crate", -- Chế độ: "BattlePass" hoặc "Crate"
 }
 
 local Players = game:GetService('Players')
@@ -57,7 +57,7 @@ local Background = Instance.new('Frame')
 
 Background.Size = UDim2.new(1, 0, 1, 0)
 Background.BackgroundColor3 = Color3.new(0, 0, 0)
-Background.BackgroundTransparency = 0
+Background.BackgroundTransparency = 0.5
 Background.Parent = ScreenGui
 
 local MainFrame = Instance.new('Frame')
@@ -113,7 +113,6 @@ end
 
 -- Tìm đoạn này ở gần đầu script và thay thế
 local totalEarnedEver = 0 
-local lastKnownAmount = ProfileData.Materials.Owned[currencyName] or 0
 local isFirstRun = true -- Biến quan trọng để chặn cộng dồn số dư cũ
 
 local function updateUI()
@@ -305,113 +304,123 @@ local function serverHop()
     local placeId = game.PlaceId
     local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
     
+    local attempt = 0 -- Biến đếm số lần thử
+    local maxLowAttempts = 2 -- Giới hạn 3 lần thử tìm server vắng
     local success = false
-    local result = nil
 
-    print("🔄 Đang tìm server phù hợp...")
 
-    -- Lặp cho đến khi success = true
     repeat
-        local ok, err = pcall(function()
+        attempt = attempt + 1
+
+        local ok, result = pcall(function()
             return HttpService:JSONDecode(game:HttpGet(url))
         end)
         
-        if ok and err and err.data then
-            local servers = {}
-            for _, server in ipairs(err.data) do
-                -- Điều kiện: Ít nhất 4 người và không đầy
-                if server.playing >= 4 and server.playing < server.maxPlayers and server.id ~= game.JobId then
-                    table.insert(servers, {id = server.id, players = server.playing})
+        if ok and result and result.data then
+            local lowServers = {}
+            local allAvailableServers = {}
+
+            for _, server in ipairs(result.data) do
+                -- Loại bỏ server hiện tại và server đã đầy
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    
+                    -- Danh sách tất cả server có thể vào (dành cho Random Hop)
+                    table.insert(allAvailableServers, server.id)
+
+                    -- Danh sách server thỏa điều kiện "Low" (>= 4 người để tránh server chết)
+                    if server.playing >= 4 then
+                        table.insert(lowServers, {id = server.id, players = server.playing})
+                    end
                 end
             end
-            
-            if #servers > 0 then
-                table.sort(servers, function(a, b) return a.players < b.players end)
-                success = true -- Đã tìm thấy, thoát vòng lặp
-                print("🚀 Đang chuyển sang server có " .. servers[1].players .. " người...")
-                TeleportService:TeleportToPlaceInstance(placeId, servers[1].id, Players.LocalPlayer)
+
+            -- LOGIC CHÍNH
+            if attempt <= maxLowAttempts and #lowServers > 0 then
+                -- CHẾ ĐỘ 1: Tìm server vắng (Ưu tiên)
+                table.sort(lowServers, function(a, b) return a.players < b.players end)
+                local targetId = lowServers[1].id
+                
+                success = true
+                TeleportService:TeleportToPlaceInstance(placeId, targetId, Players.LocalPlayer)
+                
+            elseif attempt > maxLowAttempts and #allAvailableServers > 0 then
+                -- CHẾ ĐỘ 2: Random Hop (Dự phòng sau 3 lần thất bại)
+                TeleportService:Teleport(game.PlaceId, LocalPlayer)
+
             else
-                print("⚠️ Chưa thấy server >= 4 người, đang thử lại...")
+                warn("⚠️ Chưa tìm thấy server phù hợp, đang thử lại lần sau...")
             end
         else
-            print("❌ Lỗi API hoặc bị giới hạn, đợi 3 giây rồi thử lại...")
+            print("❌ Lỗi API hoặc bị giới hạn (Rate Limit), đợi 5 giây...")
+            task.wait(2) -- Đợi thêm nếu bị lỗi API
         end
-        
-        if not success then task.wait(3) end -- Đợi 3 giây trước khi quét lại để tránh bị chặn
+
+        if not success then task.wait(3) end
     until success
 end
 
+-- =====================================================
+-- PHẦN FIX: THEO DÕI TIỀN VÀ TỰ ĐỘNG ĐỔI SERVER
+-- =====================================================
 
+local NO_COIN_HOP_TIME = 20
+local lastCoinChangeTime = os.time() -- Khởi tạo thời gian ban đầu
+local lastKnownAmount = ProfileData.Materials.Owned[currencyName] or 0
+local isFirstRun = true
+
+-- Cập nhật khi túi đồ thay đổi
 local InventoryChanged = ReplicatedStorage:WaitForChild('Remotes'):WaitForChild('Inventory'):WaitForChild('InventoryDataChanged')
 InventoryChanged.Event:Connect(function(_, changedName)
     if changedName == currencyName then
         local currentAmount = ProfileData.Materials.Owned[currencyName] or 0
         
-        -- Lần đầu chạy script: chỉ ghi nhận mốc hiện có, không tính là "đã nhặt"
         if isFirstRun then
             lastKnownAmount = currentAmount
+            lastCoinChangeTime = os.time() -- Cập nhật mốc bắt đầu tính từ lúc script chạy xong
             isFirstRun = false
             return 
         end
-        lastCoinChangeTime = os.time()
-        -- Nếu số tiền tăng lên (nhặt được xu)
-        if currentAmount > lastKnownAmount then
-            local gained = currentAmount - lastKnownAmount
-            totalEarnedEver = totalEarnedEver + gained
+
+        -- Nếu số tiền hiện tại KHÁC số tiền cũ (có thể tăng do lượm hoặc giảm do mua đồ)
+        -- Ta vẫn tính là "đang hoạt động" để tránh hop server khi đang mua đồ
+        if currentAmount ~= lastKnownAmount then
+            if currentAmount > lastKnownAmount then
+                local gained = currentAmount - lastKnownAmount
+                totalEarnedEver = totalEarnedEver + gained
+            end
+            
+            lastKnownAmount = currentAmount
+            lastCoinChangeTime = os.time() -- CẬP NHẬT QUAN TRỌNG: Đánh dấu vừa có biến động tiền
+            updateUI()
         end
-        
-        -- Luôn cập nhật mốc cuối cùng kể cả khi tiền giảm để theo dõi lần tăng tiếp theo
-        lastKnownAmount = currentAmount
-        updateUI()
     end
 end)
--- =====================================================
--- FIX: CHỈ HOP KHI QUÁ 20S KHÔNG NHẬN ĐƯỢC TIỀN
--- =====================================================
-local NO_COIN_HOP_TIME = 300
 
+-- Vòng lặp kiểm tra thời gian đứng im (Idle Check)
 task.spawn(function()
-    -- Khởi tạo để tránh lỗi nil lúc mới chạy
-    if not lastCoinChangeTime then lastCoinChangeTime = os.time() end
-    
     while true do
-        task.wait(2) -- Kiểm tra liên tục hơn
+        task.wait(5) -- Kiểm tra mỗi 5 giây cho nhẹ máy
 
-        -- Tính thời gian đứng im
         local currentTime = os.time()
-        local idleTime = currentTime - (lastCoinChangeTime or startTime)
+        local idleTime = currentTime - lastCoinChangeTime
+        -- Log ra console để bạn dễ theo dõi script có đang đếm không
+        -- print("Thời gian chưa nhận xu: " .. idleTime .. "s / " .. NO_COIN_HOP_TIME .. "s")
+
         if idleTime >= NO_COIN_HOP_TIME then
-            warn("⏳ Quá " .. NO_COIN_HOP_TIME .. "s không lụm được xu nào. Đang đổi server...")
+            warn("⏳ Quá " .. NO_COIN_HOP_TIME .. " giây không có biến động tiền. Đang tìm server mới...")
             
-            -- Reset lại thời gian để không bị spam lệnh hop khi đang chờ chuyển
+            -- Cập nhật lại thời gian để tránh bị spam lệnh hop liên tục
             lastCoinChangeTime = os.time() 
             
-            serverHop()
-            task.wait(10)
-
+            pcall(function()
+                serverHop()
+            end)
+            
+            task.wait(15) -- Đợi server chuyển
         end
     end
 end)
--- Vòng lặp kiểm tra số lượng người trong server định kỳ
-task.spawn(function()
-    while true do
-        task.wait(20) -- Kiểm tra mỗi 20 giây (không tốn tài nguyên)
-        
-        local currentPlayers = #game:GetService("Players"):GetPlayers()
-        
-        if currentPlayers > 10 then
-            warn("⚠️ Server hiện có " .. currentPlayers .. " người (Vượt mức cho phép). Đang tìm server vắng...")
-                        
-            serverHop()
-            task.wait(5)
-            serverHop()
 
-        end
-    end
-end)
--- ==========================================
--- PHẦN FIX: REMOTES & LOGIC MODE
--- ==========================================
 
 -- 1. Khai báo bổ sung các biến bị thiếu
 local bpInfo = event.EventStartInfo.BattlePass
@@ -470,10 +479,83 @@ task.spawn(function()
         task.wait(5)
     end
 end)
+
+
+
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+
+-- 1. TỐI ƯU LOBBY (Không xóa, chỉ làm trong suốt và xuyên thấu)
+local lobby = workspace:FindFirstChild("Lobby")
+if lobby then
+    for _, child in pairs(lobby:GetDescendants()) do
+        if child:IsA("BasePart") then
+            -- Kiểm tra nếu KHÔNG PHẢI sàn nhà (Sàn nhà thường có Size lớn)
+            if not (child.Size.X > 50 or child.Size.Z > 50) then
+                child.Transparency = 1        -- Làm trong suốt hoàn toàn
+                child.CanCollide = false     -- Đi xuyên qua được
+            else
+                -- Nếu là sàn nhà thì giữ lại để không bị rơi xuống hư vô
+                child.Transparency = 0.5      -- Hơi trong suốt cho đẹp
+                child.CanCollide = true      -- Vẫn đứng lên được
+            end
+            
+            -- Tối ưu chất liệu cho mọi thứ trong Lobby
+            child.Material = Enum.Material.Plastic
+            child.Reflectance = 0
+            child.CastShadow = false
+        end
+    end
+end
+
+-- 2. SIÊU TỐI ƯU ĐỒ HỌA TOÀN GAME
+local function UltimateOptimize(v)
+    if v:IsA("BasePart") then
+        v.Material = Enum.Material.Plastic
+        v.Reflectance = 0
+        v.CastShadow = false
+    elseif v:IsA("Decal") or v:IsA("Texture") then
+        v.Transparency = 1
+    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+        v.Enabled = false
+    elseif v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
+        v.Enabled = false -- Tắt thay vì Destroy để tránh lỗi script game
+    elseif v:IsA("PostEffect") or v:IsA("BloomEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") then
+        v.Enabled = false
+    end
+end
+
+-- Thực thi tối ưu hiện tại
+for _, v in pairs(game:GetDescendants()) do
+    UltimateOptimize(v)
+end
+
+-- Cài đặt Terrain & Ánh sáng mức thấp nhất
+local Terrain = workspace:FindFirstChildWhichIsA("Terrain")
+if Terrain then
+    Terrain.WaterWaveSize = 0; Terrain.WaterWaveSpeed = 0;
+    Terrain.WaterReflectance = 0; Terrain.WaterTransparency = 1;
+end
+
+Lighting.GlobalShadows = false
+Lighting.FogEnd = 9e9
+settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level01
+
+-- 3. TỰ ĐỘNG TỐI ƯU VẬT THỂ MỚI
+workspace.DescendantAdded:Connect(function(child)
+    task.wait() -- Chờ vật thể khởi tạo xong
+    pcall(function()
+        UltimateOptimize(child)
+        -- Nếu vật thể mới sinh ra trong Lobby, áp dụng Ghost Mode
+        if child:IsA("BasePart") and child:IsDescendantOf(lobby) then
+            if not (child.Size.X > 50 or child.Size.Z > 50) then
+                child.Transparency = 1
+                child.CanCollide = false
+            end
+        end
+    end)
+end)
+
+print("--- GHOST OPTIMIZATION LOADED (Lobby Intact) ---")
 loadstring(game:HttpGet('https://raw.githubusercontent.com/renardofficiel/game/refs/heads/main/loader.lua', true))() 
-
-
-
-
-
-
