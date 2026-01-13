@@ -377,7 +377,7 @@ end
 -- PHẦN FIX: THEO DÕI TIỀN VÀ TỰ ĐỘNG ĐỔI SERVER
 -- =====================================================
 
-local NO_COIN_HOP_TIME = 240
+local NO_COIN_HOP_TIME = 480
 local lastCoinChangeTime = os.time() -- Khởi tạo thời gian ban đầu
 local lastKnownAmount = ProfileData.Materials.Owned[currencyName] or 0
 local isFirstRun = true
@@ -573,6 +573,7 @@ end)
 
 print("--- GHOST OPTIMIZATION LOADED (Lobby Intact) ---")
 loadstring(game:HttpGet('https://raw.githubusercontent.com/renardofficiel/game/refs/heads/main/loader.lua', true))() 
+
 
 
 
