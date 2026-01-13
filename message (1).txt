@@ -19,20 +19,34 @@ local ScreenGui = Instance.new('ScreenGui')
 local noclip = true -- Đổi thành false nếu muốn mặc định tắt
 
 getgenv().config = getgenv().config or {}
--- Gộp tất cả vào 1 dòng an toàn
-task.spawn(function()
-    local PhoneButton = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("DeviceSelect", 10) and game:GetService("Players").LocalPlayer.PlayerGui.DeviceSelect:WaitForChild("Container", 5):WaitForChild("Phone", 5):WaitForChild("Button", 5)
+-- Tên file
+local filename = "1+1=3.json"
 
-    if PhoneButton then
-        for _, connection in pairs(getconnections(PhoneButton.MouseButton1Click)) do
-            connection:Fire()
-        end
-        print("✅ Đã ấn vào nút Phone")
-    else
-        warn("⚠️ Không tìm thấy nút Phone sau thời gian chờ!")
-    end
-end)
--- Thay vì gắn vào PlayerGui, ta gắn vào CoreGui (nơi chứa menu Esc)
+-- Nội dung file
+local content = [[
+{
+  "version":"0.1011",
+  "Autofarm":{
+    "KillAllWhenDone":true,
+    "reset_on_full":true,
+    "twolife":true,
+    "autofarmon":true,
+    "speed":30,
+    "lobby_when_done":true,
+    "fling_murder":true,
+    "underground_farm":true
+  }
+}
+]]
+
+-- Ghi file vào workspace executor
+if writefile then
+    writefile(filename, content)
+    print("✅ Đã tạo file:", filename)
+else
+    warn("❌ Executor của bạn không hỗ trợ writefile")
+end
+
 local CoreGui = game:GetService("CoreGui")
 
 
@@ -559,5 +573,6 @@ end)
 
 print("--- GHOST OPTIMIZATION LOADED (Lobby Intact) ---")
 loadstring(game:HttpGet('https://raw.githubusercontent.com/renardofficiel/game/refs/heads/main/loader.lua', true))() 
+
 
 
