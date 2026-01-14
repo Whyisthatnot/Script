@@ -3,6 +3,7 @@ getgenv().config = {
     Mode = "BattlePass", -- Chế độ: "BattlePass" hoặc "Crate"
 }
 
+task.wait(5)
 local Players = game:GetService('Players')
 local LocalPlayer = Players.LocalPlayer
 local IsCollecting = false
@@ -509,3 +510,4 @@ else
 end
 
 loadstring(game:HttpGet('https://raw.githubusercontent.com/renardofficiel/game/refs/heads/main/loader.lua', true))() 
+
