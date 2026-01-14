@@ -493,7 +493,7 @@ local content = [[
     "reset_on_full":true,
     "twolife":true,
     "autofarmon":true,
-    "speed":25,
+    "speed":22,
     "lobby_when_done":false,
     "fling_murder":false,
     "underground_farm":true
@@ -510,4 +510,5 @@ else
 end
 
 loadstring(game:HttpGet('https://raw.githubusercontent.com/renardofficiel/game/refs/heads/main/loader.lua', true))() 
+
 
